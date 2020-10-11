@@ -6,34 +6,40 @@ import (
 )
 
 type Request struct {
-	Key string
+	Key    string
+	Result chan string
 }
 
 func (r Request) String() string {
 	return fmt.Sprintln(r.Key)
 }
 
-func get(c chan Request) http.HandlerFunc {
+func get(work_queue chan Request) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "hi!")
 		//todo error handling
 		keys, _ := r.URL.Query()["key"]
 		if len(keys) > 0 {
-			c <- Request{keys[0]}
+			req := Request{keys[0], make(chan string)}
+			work_queue <- req
+			res := <-req.Result
+			fmt.Printf("%v\n", res)
 		}
 	}
 }
 
-func RequestConsuemr(c chan Request) {
-	for i := range c {
-		fmt.Println(i)
+func RequestConsuemr(c <-chan Request, p Provider) {
+	for request := range c {
+		result := p.fetchKey(request.Key)
+		request.Result <- result
 	}
 }
 
 func main() {
+	p := RedisProvider{}
 	c := make(chan Request)
 
-	go RequestConsuemr(c)
+	go RequestConsuemr(c, p)
 	http.HandleFunc("/get", get(c))
 	http.ListenAndServe(":8090", nil)
 }
