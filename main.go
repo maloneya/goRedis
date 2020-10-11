@@ -5,21 +5,33 @@ import (
 	"net/http"
 )
 
-func get(c chan int) http.HandlerFunc {
+type Request struct {
+	Key string
+}
+
+func (r Request) String() string {
+	return fmt.Sprintln(r.Key)
+}
+
+func get(c chan Request) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "sending")
-		c <- 1
+		fmt.Fprintf(w, "hi!")
+		//todo error handling
+		keys, _ := r.URL.Query()["key"]
+		if len(keys) > 0 {
+			c <- Request{keys[0]}
+		}
 	}
 }
 
-func RequestConsuemr(c chan int) {
+func RequestConsuemr(c chan Request) {
 	for i := range c {
 		fmt.Println(i)
 	}
 }
 
 func main() {
-	c := make(chan int)
+	c := make(chan Request)
 
 	go RequestConsuemr(c)
 	http.HandleFunc("/get", get(c))
