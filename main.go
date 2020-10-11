@@ -36,7 +36,7 @@ func RequestConsuemr(c <-chan Request, p Provider) {
 }
 
 func main() {
-	p := RedisProvider{}
+	p := RedisProvider{RedisClientWrapper{}, LRUCache{make(map[string]string)}}
 	c := make(chan Request)
 
 	go RequestConsuemr(c, p)
