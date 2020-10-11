@@ -1,49 +1,27 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+)
 
-type A interface {
-	one()
-}
-
-type B interface {
-	one()
-	two()
-}
-
-type T struct {
-}
-
-func (t T) one() {
-	fmt.Printf("%v", t)
-}
-
-func (t T) two() {
-	fmt.Printf("%v", t)
-}
-
-func foo(i interface{}) {
-	switch i.(type) {
-	case A:
-		fmt.Print("A\n")
-	case B:
-		fmt.Println("B\n")
+func get(c chan int) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "sending")
+		c <- 1
 	}
-
 }
 
-func bar(i interface{}) {
-	switch i.(type) {
-	case B:
-		fmt.Print("B\n")
-	case A:
-		fmt.Println("A\n")
+func RequestConsuemr(c chan int) {
+	for i := range c {
+		fmt.Println(i)
 	}
-
 }
 
 func main() {
-	t := T{}
-	foo(t)
-	bar(t)
+	c := make(chan int)
+
+	go RequestConsuemr(c)
+	http.HandleFunc("/get", get(c))
+	http.ListenAndServe(":8090", nil)
 }
